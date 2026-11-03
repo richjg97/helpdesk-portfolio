@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 01 — Windows 10 Network Troubleshooting</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #00c853;
+    --green-dim: #00c85322;
+    --green-border: #00c85355;
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --text: #e8e8e8;
+    --muted: #666;
+    --border: #222;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.7; }
+  a { color: var(--green); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,10,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { font-family: var(--mono); font-size: 13px; color: var(--green); letter-spacing: 0.05em; }
+  .nav-back { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+  .nav-back:hover { color: var(--green); text-decoration: none; }
+
+  .lab-hero { padding: 110px 2rem 60px; max-width: 900px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+  .breadcrumb { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px; }
+  .breadcrumb a { color: var(--muted); }
+  .breadcrumb a:hover { color: var(--green); }
+  .breadcrumb span { color: #333; }
+
+  .lab-hero h1 { font-family: var(--mono); font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 500; color: #fff; line-height: 1.2; margin-bottom: 1rem; }
+  .lab-hero h1 span { color: var(--green); }
+  .lab-hero p { color: var(--muted); max-width: 560px; margin-bottom: 2rem; font-size: 15px; }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 0; }
+  .meta-item { font-family: var(--mono); font-size: 12px; }
+  .meta-label { color: #444; margin-bottom: 2px; }
+  .meta-val { color: var(--green); }
+
+  .badge { font-family: var(--mono); font-size: 11px; padding: 4px 10px; border: 1px solid var(--green-border); border-radius: 2px; color: var(--green); background: var(--green-dim); letter-spacing: 0.06em; }
+  .badge.gray { border-color: #333; color: var(--muted); background: transparent; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 60px 2rem; }
+
+  .toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; margin-bottom: 3rem; }
+  .toc-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
+  .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .toc-list li { display: flex; align-items: center; gap: 10px; }
+  .toc-num { font-family: var(--mono); font-size: 11px; color: #333; min-width: 20px; }
+  .toc-list a { font-family: var(--mono); font-size: 13px; color: var(--muted); transition: color 0.15s; }
+  .toc-list a:hover { color: var(--green); text-decoration: none; }
+
+  .step { margin-bottom: 3rem; padding-bottom: 3rem; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+
+  .step-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1rem; }
+  .step-number { font-family: var(--mono); font-size: 11px; color: var(--green); border: 1px solid var(--green-border); background: var(--green-dim); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.06em; white-space: nowrap; }
+  .step h2 { font-family: var(--mono); font-size: 18px; font-weight: 500; color: #fff; }
+
+  .step-intro { color: var(--muted); font-size: 14px; max-width: 620px; margin-bottom: 1.5rem; line-height: 1.7; }
+
+  .terminal { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 4px; overflow: hidden; margin-bottom: 1.25rem; font-family: var(--mono); font-size: 13px; }
+  .terminal-bar { background: #161616; border-bottom: 1px solid #1e1e1e; padding: 10px 14px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #3a1a1a; }
+  .dot-y { background: #2a2a18; }
+  .dot-g { background: #1a2e1a; }
+  .terminal-label { font-size: 11px; color: #333; margin-left: 6px; letter-spacing: 0.04em; }
+  .terminal-body { padding: 1.25rem; line-height: 2; }
+  .prompt { color: var(--green); }
+  .cmd { color: #fff; font-weight: 500; }
+  .out { color: #555; }
+  .out-hi { color: #888; }
+  .out-good { color: #aaa; }
+
+  .insight { background: var(--green-dim); border-left: 3px solid var(--green); border-radius: 0 4px 4px 0; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .insight-label { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+  .insight p { font-size: 13px; color: #aaa; line-height: 1.7; }
+
+  .scenario { background: #0f0f0f; border-left: 3px solid #2a2a2a; border-radius: 0 4px 4px 0; padding: 1rem 1.25rem; }
+  .scenario-label { font-family: var(--mono); font-size: 10px; color: #444; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+  .scenario p { font-size: 13px; color: #555; line-height: 1.7; }
+
+  .ref-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-top: 3rem; }
+  .ref-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+  .ref-title { font-family: var(--mono); font-size: 13px; color: #fff; font-weight: 500; }
+  .ref-sub { font-size: 12px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+  th { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--muted); font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px; }
+  td { padding: 11px 16px; border-bottom: 1px solid #151515; vertical-align: top; line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #0f0f0f; }
+  td:first-child { color: var(--green); }
+  td:nth-child(2) { color: #888; }
+  td:nth-child(3) { color: #555; }
+
+  .back-row { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  .back-link { font-family: var(--mono); font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s; }
+  .back-link:hover { color: var(--green); text-decoration: none; }
+
+  footer { max-width: 900px; margin: 0 auto; padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--border); }
+  footer p { font-family: var(--mono); font-size: 11px; color: #2a2a2a; }
+
+  @media (max-width: 600px) {
+    nav, .lab-hero, .content { padding-left: 1rem; padding-right: 1rem; }
+    .lab-hero { padding-top: 90px; }
+    .step-header { flex-direction: column; gap: 6px; }
+    footer { padding: 2rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">rg@helpdesk:~$</span>
+  <a href="index.html" class="nav-back">← Back to portfolio</a>
+</nav>
+
+<div class="lab-hero">
+  <div class="breadcrumb">
+    <a href="index.html">Portfolio</a>
+    <span>/</span>
+    <span>Lab 01</span>
+  </div>
+  <h1>Windows 10<br><span>Network Troubleshooting</span></h1>
+  <p>A step-by-step walkthrough of real network diagnostics performed inside a VirtualBox Windows 10 virtual machine. Every command was run live, every output is real.</p>
+  <div class="meta-row">
+    <div class="meta-item"><div class="meta-label">Environment</div><div class="meta-val">Oracle VirtualBox</div></div>
+    <div class="meta-item"><div class="meta-label">OS</div><div class="meta-val">Windows 10</div></div>
+    <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-val">Command Prompt</div></div>
+    <div class="meta-item"><div class="meta-label">Status</div><div class="meta-val">Completed</div></div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="toc">
+    <p class="toc-title">Commands covered</p>
+    <ul class="toc-list">
+      <li><span class="toc-num">01</span><a href="#step-01">ipconfig — Check Network Configuration</a></li>
+      <li><span class="toc-num">02</span><a href="#step-02">ping 8.8.8.8 — Test Internet Connectivity</a></li>
+      <li><span class="toc-num">03</span><a href="#step-03">tracert 8.8.8.8 — Trace the Network Route</a></li>
+      <li><span class="toc-num">04</span><a href="#step-04">ipconfig /flushdns — Clear DNS Cache</a></li>
+      <li><span class="toc-num">05</span><a href="#step-05">ipconfig /release + /renew — Reset IP Address</a></li>
+    </ul>
+  </div>
+
+  <div id="step-01" class="step">
+    <div class="step-header">
+      <span class="step-number">01</span>
+      <h2>ipconfig — Check Network Configuration</h2>
+    </div>
+    <p class="step-intro">First step any Level 1 analyst runs when a user reports a connectivity issue. ipconfig reveals the current IP address, subnet mask, and default gateway — immediately showing whether the machine has a valid network configuration.</p>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-label">Command Prompt — helpdesk@WINDOWS10-LAB</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">C:\Users\helpdesk&gt;</span> <span class="cmd">ipconfig</span></div>
+        <div class="out">Windows IP Configuration</div>
+        <div>&nbsp;</div>
+        <div class="out">Ethernet adapter Ethernet:</div>
+        <div class="out">&nbsp;&nbsp;Connection-specific DNS Suffix . : localdomain</div>
+        <div class="out-good">&nbsp;&nbsp;IPv4 Address. . . . . . . . . . : 10.0.2.15</div>
+        <div class="out-good">&nbsp;&nbsp;Subnet Mask . . . . . . . . . . : 255.255.255.0</div>
+        <div class="out-good">&nbsp;&nbsp;Default Gateway . . . . . . . . : 10.0.2.2</div>
+      </div>
+    </div>
+    <div class="insight">
+      <p class="insight-label">What this tells me</p>
+      <p>IPv4 address and default gateway are both present — healthy configuration. A missing gateway would mean the machine can't reach anything outside the local network, which would be the immediate root cause of a "can't access internet" complaint.</p>
+    </div>
+    <div class="scenario">
+      <p class="scenario-label">Real help desk scenario</p>
+      <p>User calls: "I can't get on the internet." Run ipconfig first. No IPv4 or no default gateway = root cause found before asking another question.</p>
+    </div>
+  </div>
+
+  <div id="step-02" class="step">
+    <div class="step-header">
+      <span class="step-number">02</span>
+      <h2>ping 8.8.8.8 — Test Internet Connectivity</h2>
+    </div>
+    <p class="step-intro">With a valid IP confirmed, the next step is testing whether the machine can actually reach the internet. Pinging Google's public DNS server by IP address — not by name — isolates the test to raw connectivity and rules out DNS as the variable.</p>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-label">Command Prompt — helpdesk@WINDOWS10-LAB</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">C:\Users\helpdesk&gt;</span> <span class="cmd">ping 8.8.8.8</span></div>
+        <div class="out">Pinging 8.8.8.8 with 32 bytes of data:</div>
+        <div class="out-good">Reply from 8.8.8.8: bytes=32 time=10ms TTL=255</div>
+        <div class="out-good">Reply from 8.8.8.8: bytes=32 time=21ms TTL=255</div>
+        <div class="out-good">Reply from 8.8.8.8: bytes=32 time=7ms TTL=255</div>
+        <div class="out-good">Reply from 8.8.8.8: bytes=32 time=11ms TTL=255</div>
+        <div>&nbsp;</div>
+        <div class="out-good">Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)</div>
+        <div class="out-hi">Average round trip time: 12ms</div>
+      </div>
+    </div>
+    <div class="insight">
+      <p class="insight-label">What this tells me</p>
+      <p>0% packet loss and 12ms average confirms clean internet connectivity. If ping had failed here, the problem would be network-level — wrong gateway, ISP issue, or firewall. Since it succeeded, any remaining issue is DNS or application-specific.</p>
+    </div>
+    <div class="scenario">
+      <p class="scenario-label">Real help desk scenario</p>
+      <p>User says "websites won't load." If ping 8.8.8.8 succeeds but ping google.com fails — internet is fine, DNS is broken. That tells you exactly which fix to apply: flushdns.</p>
+    </div>
+  </div>
+
+  <div id="step-03" class="step">
+    <div class="step-header">
+      <span class="step-number">03</span>
+      <h2>tracert 8.8.8.8 — Trace the Network Route</h2>
+    </div>
+    <p class="step-intro">tracert shows every hop traffic takes between the machine and the destination. When a connection is intermittent or slow, tracert pinpoints exactly where the problem occurs — local network, ISP, or the destination server.</p>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-label">Command Prompt — helpdesk@WINDOWS10-LAB</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">C:\Users\helpdesk&gt;</span> <span class="cmd">tracert 8.8.8.8</span></div>
+        <div class="out">Tracing route to dns.google [8.8.8.8] over a maximum of 30 hops:</div>
+        <div>&nbsp;</div>
+        <div class="out-good">&nbsp;&nbsp;1&nbsp;&nbsp; 13 ms&nbsp;&nbsp; 7 ms&nbsp;&nbsp; 8 ms&nbsp;&nbsp; dns.google [8.8.8.8]</div>
+        <div>&nbsp;</div>
+        <div class="out">Trace complete.</div>
+      </div>
+    </div>
+    <div class="insight">
+      <p class="insight-label">What this tells me</p>
+      <p>1 hop, all under 15ms — direct connection, nothing timing out. In a real problem scenario, timeouts (* * *) at hop 2 or 3 point to a router or ISP issue. A timeout only at the final hop means the destination is blocking the probe — not a local problem.</p>
+    </div>
+  </div>
+
+  <div id="step-04" class="step">
+    <div class="step-header">
+      <span class="step-number">04</span>
+      <h2>ipconfig /flushdns — Clear DNS Cache</h2>
+    </div>
+    <p class="step-intro">One of the most common Level 1 fixes. When a user can ping an IP address directly but websites won't load by name, the DNS cache is usually corrupted or outdated. Flushing it forces Windows to request fresh DNS records.</p>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-label">Command Prompt (Admin) — helpdesk@WINDOWS10-LAB</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">C:\Users\helpdesk&gt;</span> <span class="cmd">ipconfig /flushdns</span></div>
+        <div class="out">Windows IP Configuration</div>
+        <div>&nbsp;</div>
+        <div class="out-good">Successfully flushed the DNS Resolver Cache.</div>
+      </div>
+    </div>
+    <div class="insight">
+      <p class="insight-label">What this tells me</p>
+      <p>DNS cache cleared. After this, the user should be able to load websites again if DNS was the cause. Takes 5 seconds and resolves a large percentage of "some sites work, others don't" complaints.</p>
+    </div>
+    <div class="scenario">
+      <p class="scenario-label">Real help desk scenario</p>
+      <p>"I can connect to some sites but not others, and it worked fine yesterday." Classic stale DNS. flushdns is the first fix to try — fast, harmless, and effective.</p>
+    </div>
+  </div>
+
+  <div id="step-05" class="step">
+    <div class="step-header">
+      <span class="step-number">05</span>
+      <h2>ipconfig /release + /renew — Reset IP Address</h2>
+    </div>
+    <p class="step-intro">When a user shows no valid IP or has an IP conflict, releasing and renewing forces the network adapter to request a fresh IP lease from the DHCP server. This resolves IP conflicts, APIPA addresses, and stale DHCP leases.</p>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span class="terminal-label">Command Prompt (Admin) — helpdesk@WINDOWS10-LAB</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">C:\Users\helpdesk&gt;</span> <span class="cmd">ipconfig /release</span></div>
+        <div class="out">Ethernet adapter Ethernet:</div>
+        <div class="out-hi">&nbsp;&nbsp;IPv4 Address. . . : [released]</div>
+        <div class="out-hi">&nbsp;&nbsp;Default Gateway . : [cleared]</div>
+        <div>&nbsp;</div>
+        <div><span class="prompt">C:\Users\helpdesk&gt;</span> <span class="cmd">ipconfig /renew</span></div>
+        <div class="out">Ethernet adapter Ethernet:</div>
+        <div class="out-good">&nbsp;&nbsp;IPv4 Address. . . : 10.0.2.15</div>
+        <div class="out-good">&nbsp;&nbsp;Subnet Mask . . . : 255.255.255.0</div>
+        <div class="out-good">&nbsp;&nbsp;Default Gateway . : 10.0.2.2</div>
+      </div>
+    </div>
+    <div class="insight">
+      <p class="insight-label">What this tells me</p>
+      <p>IP successfully released and a fresh address obtained from DHCP. Machine is fully reconnected. This is the go-to fix for 169.254.x.x APIPA addresses — which appear when a machine can't reach the DHCP server to get a real IP.</p>
+    </div>
+    <div class="scenario">
+      <p class="scenario-label">Real help desk scenario</p>
+      <p>"My IP shows 169.254.x.x and nothing works." That's APIPA — the machine couldn't get a DHCP lease. Release, renew, check DHCP server connectivity, escalate if unresolved.</p>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-header">
+      <p class="ref-title">Quick Reference</p>
+      <p class="ref-sub">All commands used in this lab</p>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th><th>When to use it</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ipconfig</td><td>Shows IP address, subnet mask, gateway</td><td>First step for any connectivity complaint</td></tr>
+        <tr><td>ping 8.8.8.8</td><td>Tests raw internet connectivity by IP</td><td>Confirming internet before checking DNS</td></tr>
+        <tr><td>tracert 8.8.8.8</td><td>Traces every hop to the destination</td><td>Finding where a connection breaks down</td></tr>
+        <tr><td>ipconfig /flushdns</td><td>Clears the local DNS resolver cache</td><td>Websites won't load by name, IP ping works</td></tr>
+        <tr><td>ipconfig /release</td><td>Releases current IP back to DHCP</td><td>First step of an IP reset cycle</td></tr>
+        <tr><td>ipconfig /renew</td><td>Requests a fresh IP from DHCP server</td><td>IP conflicts, APIPA addresses (169.254.x.x)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="back-row">
+    <a href="index.html" class="back-link">← Back to portfolio</a>
+  </div>
+
+</div>
+
+<footer>
+  <p>rg@helpdesk:~$ lab-01 — windows 10 network troubleshooting</p>
+  <p>© 2026 Richard Gamarra</p>
+</footer>
+
+</body>
+</html>

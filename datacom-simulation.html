@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Datacom Service Desk Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #00c853;
+    --green-dim: #00c85322;
+    --green-border: #00c85355;
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --text: #e8e8e8;
+    --muted: #666;
+    --border: #222;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.7; }
+  a { color: var(--green); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,10,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { font-family: var(--mono); font-size: 13px; color: var(--green); letter-spacing: 0.05em; }
+  .nav-back { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+  .nav-back:hover { color: var(--green); text-decoration: none; }
+
+  .page-hero { padding: 110px 2rem 60px; max-width: 900px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+  .breadcrumb { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px; }
+  .breadcrumb a { color: var(--muted); }
+  .breadcrumb a:hover { color: var(--green); }
+  .breadcrumb span { color: #333; }
+  .page-hero h1 { font-family: var(--mono); font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 500; color: #fff; line-height: 1.2; margin-bottom: 1rem; }
+  .page-hero h1 span { color: var(--green); }
+  .page-hero p { color: var(--muted); max-width: 580px; margin-bottom: 2rem; font-size: 15px; line-height: 1.8; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+  .meta-item { font-family: var(--mono); font-size: 12px; }
+  .meta-label { color: #444; margin-bottom: 2px; }
+  .meta-val { color: var(--green); }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 60px 2rem; }
+
+  .toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; margin-bottom: 4rem; }
+  .toc-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
+  .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .toc-list li { display: flex; align-items: center; gap: 10px; }
+  .toc-num { font-family: var(--mono); font-size: 11px; color: #333; min-width: 20px; }
+  .toc-list a { font-family: var(--mono); font-size: 13px; color: var(--muted); transition: color 0.15s; }
+  .toc-list a:hover { color: var(--green); text-decoration: none; }
+
+  .deliverable { margin-bottom: 4rem; padding-bottom: 4rem; border-bottom: 1px solid var(--border); }
+  .deliverable:last-child { border-bottom: none; }
+
+  .deliverable-header { margin-bottom: 1.5rem; }
+  .deliverable-tag { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .deliverable-tag::before { content: ''; width: 16px; height: 1px; background: var(--green); display: inline-block; }
+  .deliverable h2 { font-family: var(--mono); font-size: 20px; font-weight: 500; color: #fff; margin-bottom: 8px; }
+  .deliverable-context { font-size: 13px; color: var(--muted); max-width: 600px; line-height: 1.7; margin-bottom: 1.5rem; }
+
+  .email-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .email-header { background: #0f0f0f; border-bottom: 1px solid var(--border); padding: 1.25rem 1.5rem; }
+  .email-field { display: flex; gap: 1rem; margin-bottom: 6px; font-size: 13px; }
+  .email-field:last-child { margin-bottom: 0; }
+  .email-field-label { font-family: var(--mono); font-size: 11px; color: #444; min-width: 60px; padding-top: 1px; }
+  .email-field-val { color: #888; font-size: 13px; }
+  .email-field-val.subject { color: #ccc; font-weight: 500; }
+  .email-body { padding: 1.5rem; font-size: 14px; color: #aaa; line-height: 1.9; white-space: pre-wrap; }
+
+  .doc-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .doc-section { padding: 1.5rem; border-bottom: 1px solid var(--border); }
+  .doc-section:last-child { border-bottom: none; }
+  .doc-section-label { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #1a1a1a; }
+  .doc-field { margin-bottom: 1rem; }
+  .doc-field:last-child { margin-bottom: 0; }
+  .doc-field-label { font-family: var(--mono); font-size: 11px; color: #555; margin-bottom: 4px; }
+  .doc-field-val { font-size: 13px; color: #999; line-height: 1.7; }
+  .doc-field-val.prominent { color: #ccc; }
+
+  .numbered-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .numbered-list li { display: flex; gap: 10px; font-size: 13px; color: #999; line-height: 1.6; }
+  .numbered-list .n { font-family: var(--mono); font-size: 11px; color: var(--green); min-width: 18px; padding-top: 2px; }
+
+  .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .bullet-list li { display: flex; gap: 10px; font-size: 13px; color: #999; line-height: 1.6; }
+  .bullet-list li::before { content: '—'; font-family: var(--mono); font-size: 11px; color: #333; padding-top: 2px; flex-shrink: 0; }
+
+  .priority-block { margin-bottom: 1.25rem; padding: 1.25rem; background: #0d0d0d; border: 1px solid var(--border); border-radius: 4px; }
+  .priority-block:last-child { margin-bottom: 0; }
+  .priority-label { font-family: var(--mono); font-size: 11px; margin-bottom: 6px; display: inline-block; padding: 2px 8px; border-radius: 2px; }
+  .priority-label.critical { background: #1a0a0a; color: #ff4444; border: 1px solid #ff444433; }
+  .priority-label.high { background: #1a1200; color: #ffaa00; border: 1px solid #ffaa0033; }
+  .priority-label.medium { background: #0a0f1a; color: #4488ff; border: 1px solid #4488ff33; }
+  .priority-label.low { background: #0f0f0f; color: #666; border: 1px solid #333; }
+  .priority-title { font-family: var(--mono); font-size: 13px; color: #ccc; margin-bottom: 6px; }
+  .priority-desc { font-size: 13px; color: #666; line-height: 1.6; }
+
+  .badge { font-family: var(--mono); font-size: 11px; padding: 4px 10px; border: 1px solid var(--green-border); border-radius: 2px; color: var(--green); background: var(--green-dim); letter-spacing: 0.06em; }
+  .badge.gray { border-color: #333; color: var(--muted); background: transparent; }
+
+  .cert-banner { background: var(--green-dim); border: 1px solid var(--green-border); border-radius: 4px; padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; margin-bottom: 4rem; flex-wrap: wrap; }
+  .cert-icon-big { font-size: 40px; }
+  .cert-info { flex: 1; }
+  .cert-title { font-family: var(--mono); font-size: 15px; color: var(--green); font-weight: 500; margin-bottom: 4px; }
+  .cert-detail { font-size: 13px; color: #666; }
+
+  .back-row { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  .back-link { font-family: var(--mono); font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s; }
+  .back-link:hover { color: var(--green); text-decoration: none; }
+
+  footer { max-width: 900px; margin: 0 auto; padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--border); }
+  footer p { font-family: var(--mono); font-size: 11px; color: #2a2a2a; }
+
+  @media (max-width: 600px) {
+    nav, .page-hero, .content { padding-left: 1rem; padding-right: 1rem; }
+    .page-hero { padding-top: 90px; }
+    footer { padding: 2rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">rg@helpdesk:~$</span>
+  <a href="index.html" class="nav-back">← Back to portfolio</a>
+</nav>
+
+<div class="page-hero">
+  <div class="breadcrumb">
+    <a href="index.html">Portfolio</a>
+    <span>/</span>
+    <span>Datacom Service Desk Simulation</span>
+  </div>
+  <h1>Datacom <span>Service Desk</span><br>Simulation</h1>
+  <p>A virtual work experience program by Forage, simulating real Tier 1 help desk responsibilities — technical issue resolution, ticket prioritisation, ITIL-based escalation, and client communication under pressure.</p>
+  <div class="meta-row">
+    <div class="meta-item"><div class="meta-label">Provider</div><div class="meta-val">Forage</div></div>
+    <div class="meta-item"><div class="meta-label">Company</div><div class="meta-val">Datacom</div></div>
+    <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-val">2 Tasks</div></div>
+    <div class="meta-item"><div class="meta-label">Status</div><div class="meta-val">Completed</div></div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="cert-banner">
+    <div class="cert-icon-big">🏆</div>
+    <div class="cert-info">
+      <p class="cert-title">Certificate of Completion — Datacom Service Desk</p>
+      <p class="cert-detail">Issued by Forage · Datacom Managed Services · 2026</p>
+    </div>
+    <span class="badge">Verified</span>
+  </div>
+
+  <div class="toc">
+    <p class="toc-title">Deliverables in this simulation</p>
+    <ul class="toc-list">
+      <li><span class="toc-num">01</span><a href="#d1">Client support email — GreenScape Landscaping</a></li>
+      <li><span class="toc-num">02</span><a href="#d2">Incident report — Ticket 54321</a></li>
+      <li><span class="toc-num">03</span><a href="#d3">Ticket prioritisation plan — Network outage scenario</a></li>
+      <li><span class="toc-num">04</span><a href="#d4">Client communication — Network outage update</a></li>
+    </ul>
+  </div>
+
+  <!-- DELIVERABLE 1 -->
+  <div id="d1" class="deliverable">
+    <div class="deliverable-header">
+      <p class="deliverable-tag">Task 1 — Technical Issue Resolution</p>
+      <h2>Client Support Email</h2>
+      <p class="deliverable-context">GreenScape Landscaping's office manager Jenna Marshall submitted an urgent ticket reporting that the company's main email account was inaccessible. The login page was refreshing on every attempt with no error message displayed. The goal was to diagnose the likely cause, ask targeted questions to isolate scope, and provide immediate steps — all in a single professional email.</p>
+    </div>
+    <div class="email-card">
+      <div class="email-header">
+        <div class="email-field"><span class="email-field-label">From</span><span class="email-field-val">Richard G. &lt;support@datacom.com&gt;</span></div>
+        <div class="email-field"><span class="email-field-label">To</span><span class="email-field-val">Jenna Marshall &lt;jenna@greenscapelandscaping.com&gt;</span></div>
+        <div class="email-field"><span class="email-field-label">Re</span><span class="email-field-val subject">Urgent: Email Access Issue — GreenScape Landscaping [Ticket #54321]</span></div>
+      </div>
+      <div class="email-body">Hi Jenna,
+
+Thanks for getting in touch — I'm Richard from Datacom's service desk, and I've picked up your ticket. I can imagine how frustrating it must be to have your email down first thing on a Monday, especially when you're trying to keep up with clients and suppliers. Let's get this sorted out for you.
+
+The fact that the page is just refreshing without any error message is actually a helpful clue. It's pointing me toward a few likely culprits — a browser or cache issue being the most common, though I also want to rule out any service disruptions on the email provider's end.
+
+Before I dig deeper, a few quick questions that will help me narrow it down:
+
+1. Is this affecting everyone at GreenScape or just certain staff members?
+2. Have you tried a different browser, like Edge or Firefox, or is it happening across all of them?
+3. Does the same thing happen on a phone or a different computer?
+4. Any error codes at all, even briefly, before the page refreshes?
+
+While you're gathering that for me, it's worth trying a couple of things right now — clearing your browser cache and cookies, or trying the login in an incognito window. These fix the issue more often than you'd think.
+
+I'm already looking into things on my end and will have an update for you within the hour regardless of your reply.
+
+Hang tight — we've got this.
+
+Richard
+Service Desk | Datacom
+Ticket #54321</div>
+    </div>
+  </div>
+
+  <!-- DELIVERABLE 2 -->
+  <div id="d2" class="deliverable">
+    <div class="deliverable-header">
+      <p class="deliverable-tag">Task 1 — Technical Issue Resolution</p>
+      <h2>Incident Report — Ticket #54321</h2>
+      <p class="deliverable-context">After resolving the GreenScape email issue through a series of diagnostic questions and guided troubleshooting steps, a formal incident report was completed documenting the full lifecycle of the ticket — from initial report through root cause identification, resolution, and closure.</p>
+    </div>
+    <div class="doc-card">
+
+      <div class="doc-section">
+        <p class="doc-section-label">Incident Details</p>
+        <div class="doc-field"><p class="doc-field-label">Incident ID</p><p class="doc-field-val prominent">#54321</p></div>
+        <div class="doc-field"><p class="doc-field-label">Date and Time</p><p class="doc-field-val">May 19, 2026 — approximately 5:00 PM</p></div>
+        <div class="doc-field"><p class="doc-field-label">Reported By</p><p class="doc-field-val">Jenna Marshall, Office Manager — GreenScape Landscaping</p></div>
+      </div>
+
+      <div class="doc-section">
+        <p class="doc-section-label">Incident Description</p>
+        <div class="doc-field"><p class="doc-field-label">Brief Description</p><p class="doc-field-val">GreenScape Landscaping reported being unable to access their main business email account (support@greenscapelandscaping.com). Each login attempt caused the page to refresh without displaying any error message. The issue started late on May 19, 2026 with no prior changes to account settings or passwords.</p></div>
+        <div class="doc-field"><p class="doc-field-label">Impact on Operations</p><p class="doc-field-val">With email being GreenScape's primary communication channel, the outage blocked all contact with clients and suppliers, disrupting scheduling, invoicing, and day-to-day operations.</p></div>
+      </div>
+
+      <div class="doc-section">
+        <p class="doc-section-label">Detailed Analysis</p>
+        <div class="doc-field"><p class="doc-field-label">Steps Taken to Identify the Problem</p>
+          <ul class="numbered-list">
+            <li><span class="n">1.</span>Reviewed the ticket and noted the key symptom: login loop with no error message.</li>
+            <li><span class="n">2.</span>Contacted Jenna via email to gather further diagnostic details.</li>
+            <li><span class="n">3.</span>Asked targeted questions to isolate the scope and root cause.</li>
+            <li><span class="n">4.</span>Checked the email provider for known service outages — none found.</li>
+            <li><span class="n">5.</span>Narrowed root cause to a browser-side issue based on client responses.</li>
+          </ul>
+        </div>
+        <div class="doc-field"><p class="doc-field-label">Key Findings</p><p class="doc-field-val">Issue was isolated to a single browser on one workstation. No server-side disruption. Conclusively identified as corrupted browser cache and cookies.</p></div>
+      </div>
+
+      <div class="doc-section">
+        <p class="doc-section-label">Resolution</p>
+        <div class="doc-field"><p class="doc-field-label">Steps Taken</p>
+          <ul class="numbered-list">
+            <li><span class="n">1.</span>Advised Jenna to clear Chrome's cache and cookies via Settings &gt; Privacy and Security &gt; Clear Browsing Data.</li>
+            <li><span class="n">2.</span>Instructed her to close and reopen Chrome, then attempt login again.</li>
+            <li><span class="n">3.</span>When the issue persisted, advised opening a Chrome incognito window and attempting login from there.</li>
+            <li><span class="n">4.</span>Login via incognito was successful on the first attempt, confirming the root cause.</li>
+          </ul>
+        </div>
+        <div class="doc-field"><p class="doc-field-label">Resolution Timeframe</p><p class="doc-field-val">Approximately 45 minutes from initial contact, within Datacom's standard SLA for high priority tickets.</p></div>
+      </div>
+
+      <div class="doc-section">
+        <p class="doc-section-label">Outcome and Follow-Up</p>
+        <div class="doc-field"><p class="doc-field-label">Client Satisfaction</p><p class="doc-field-val">Jenna replied via email confirming access had been restored, stating the steps were easy to follow. She thanked the team for the quick turnaround and expressed confidence in Datacom's support going forward.</p></div>
+        <div class="doc-field"><p class="doc-field-label">Follow-Up Recommendations</p>
+          <ul class="bullet-list">
+            <li>Clear browser cache and cookies regularly — every two to four weeks.</li>
+            <li>Keep Google Chrome updated to the latest version.</li>
+            <li>Use incognito mode as a quick diagnostic step if a similar issue comes up before contacting support.</li>
+          </ul>
+        </div>
+        <div class="doc-field"><p class="doc-field-label">Ticket Closure</p><p class="doc-field-val">Ticket #54321 formally closed on May 20, 2026 following written confirmation of resolution from the client.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DELIVERABLE 3 -->
+  <div id="d3" class="deliverable">
+    <div class="deliverable-header">
+      <p class="deliverable-tag">Task 2 — Customer Support and Escalation</p>
+      <h2>Ticket Prioritisation Plan</h2>
+      <p class="deliverable-context">A batch of five support tickets arrived simultaneously, including a critical network outage affecting two entire client organisations. The task required categorising each ticket, building a prioritisation plan using ITIL frameworks, and justifying every decision.</p>
+    </div>
+    <div class="doc-card">
+
+      <div class="doc-section">
+        <p class="doc-section-label">Ticket Categorisation</p>
+        <div class="doc-field"><p class="doc-field-label">Ticket #001 — Network Outage — Global Design Inc.</p><p class="doc-field-val">Total loss of internet and cloud access affecting every user. Operations halted. Major incident.</p></div>
+        <div class="doc-field"><p class="doc-field-label">Ticket #002 — Network Outage — Peak Solutions</p><p class="doc-field-val">Identical situation to #001. Full network failure across the entire office. Same root cause suspected. Treated as one major incident.</p></div>
+        <div class="doc-field"><p class="doc-field-label">Ticket #003 — Service Request — Creative Solutions</p><p class="doc-field-val">Software installation request ahead of a project deadline. No work stopped. Planned task, not an incident.</p></div>
+        <div class="doc-field"><p class="doc-field-label">Ticket #004 — Account Access — FinTech Advisors</p><p class="doc-field-val">Single user locked out of email with financial documents due today. Hard deadline makes this time sensitive.</p></div>
+        <div class="doc-field"><p class="doc-field-label">Ticket #005 — Hardware Issue — BuildRight Construction</p><p class="doc-field-val">Laptop screen flickering affecting one user. Temporary workaround available via external monitor.</p></div>
+      </div>
+
+      <div class="doc-section">
+        <p class="doc-section-label">Prioritisation Plan</p>
+        <div class="priority-block">
+          <span class="priority-label critical">Critical</span>
+          <p class="priority-title">Tickets #001 and #002 — Network Outage</p>
+          <p class="priority-desc">Logged as a single major incident. Two entire organisations losing connectivity simultaneously points to a shared infrastructure issue. Cannot be resolved at Tier 1. Immediate specialist escalation required following full ITIL incident management process.</p>
+        </div>
+        <div class="priority-block">
+          <span class="priority-label high">High</span>
+          <p class="priority-title">Ticket #004 — Password Reset</p>
+          <p class="priority-desc">Hard financial deadline today. Fix is fast and can be completed while the network escalation is already underway with the specialist team.</p>
+        </div>
+        <div class="priority-block">
+          <span class="priority-label medium">Medium</span>
+          <p class="priority-title">Ticket #005 — Hardware Issue</p>
+          <p class="priority-desc">One user impacted with a workaround available. Same-day attention but not an emergency.</p>
+        </div>
+        <div class="priority-block">
+          <span class="priority-label low">Low</span>
+          <p class="priority-title">Ticket #003 — Software Installation</p>
+          <p class="priority-desc">No work stopped. Service request scheduled once urgent tickets are resolved.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DELIVERABLE 4 -->
+  <div id="d4" class="deliverable">
+    <div class="deliverable-header">
+      <p class="deliverable-tag">Task 2 — Customer Support and Escalation</p>
+      <h2>Client Communication — Network Outage Update</h2>
+      <p class="deliverable-context">After escalating the network outage to the specialist team, the network engineers identified an unexpected failure in the main data centre infrastructure as the root cause. Full restoration was anticipated within 24 hours. An update email was drafted and sent to affected users at both Global Design Inc. and Peak Solutions.</p>
+    </div>
+    <div class="email-card">
+      <div class="email-header">
+        <div class="email-field"><span class="email-field-label">From</span><span class="email-field-val">Richard G. &lt;support@datacom.com&gt;</span></div>
+        <div class="email-field"><span class="email-field-label">To</span><span class="email-field-val">Global Design Inc. and Peak Solutions — All Affected Staff</span></div>
+        <div class="email-field"><span class="email-field-label">Subject</span><span class="email-field-val subject">Update on Your Network Outage</span></div>
+      </div>
+      <div class="email-body">Dear Global Design Inc. and Peak Solutions Teams,
+
+First of all I want to apologise for the disruption today. I know losing network access completely is not just an inconvenience — it brings everything to a standstill, and I appreciate your patience while we have been working to get this resolved.
+
+I wanted to reach out personally to let you know where things stand.
+
+Our network team has identified the cause. An unexpected failure in our main data centre infrastructure is what brought down connectivity across both of your organisations this morning. It was not something that could have been anticipated, but that does not make the impact on your day any less frustrating and I want to acknowledge that.
+
+The good news is that our engineers have been on this since the issue was first flagged and have already made solid progress. We are expecting full restoration of services within the next 24 hours. The team will stay across the network throughout that period to make sure everything is stable before we close the incident out.
+
+You do not need to do anything on your end. If you notice any brief changes to your connectivity over the next day or so, that is likely part of the restoration work happening in the background.
+
+I will keep you updated as things progress. If anything changes or you have questions in the meantime, please reach out directly at support@datacom.com and someone will get back to you straight away.
+
+Thank you again for bearing with us. Getting your teams back online is the priority right now and we are not stopping until that is done.
+
+Kind regards,
+Richard G.
+Service Desk Agent | Datacom Managed Services
+support@datacom.com</div>
+    </div>
+  </div>
+
+  <div class="back-row">
+    <a href="index.html" class="back-link">← Back to portfolio</a>
+  </div>
+
+</div>
+
+<footer>
+  <p>rg@helpdesk:~$ datacom service desk simulation — forage</p>
+  <p>© 2026 Richard Gamarra</p>
+</footer>
+
+</body>
+</html>
